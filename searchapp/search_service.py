@@ -8,9 +8,11 @@ def index_product(product):
         "name": product.name,
         "description": product.description,
         "category": product.category,
-        "price": float(product.price)
+        "price": float(product.price),
+        "suggest": {
+            "input": [product.name, product.category]
+        }
+        # Add other fields like city, available_dates, etc.
     }
     es.index(index="products", id=product.id, body=doc)
 
-def delete_product(product_id):
-    es.delete(index="products", id=product_id, ignore=[404])

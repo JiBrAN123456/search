@@ -27,26 +27,46 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
     
-    @action(detail=False, methods=['get'], url_path='es-search')
-    def es_search(self, request):
-        from elasticsearch import Elasticsearch
+        @action(detail=False, methods=['get'], url_path='es-search')
+        def es_search(self, request):
+            es = Elasticsearch("http://localhost:9200")
+    
+            q = request.query_params.get("q", "")
+            category = request.query_params.get("category")
+            price_min = request.query_params.get("price_min")
+            price_max = request.query_params.get("price_max")
 
-        query = request.query_params.get('q', '')
-        es = Elasticsearch("http://localhost:9200")
+            must = []
+            filter_ = []
 
-        if not query:
-           return Response([])
-
-        res = es.search(index="products", body={
-            "query": {
-               "multi_match": {
-                "query": query,
+            if q:
+               must.append({
+            "multi_match": {
+                "query": q,
                 "fields": ["name", "description", "category"],
                 "fuzziness": "AUTO"
-                }
-           }
-        })
+            }
+            })
 
-        hits = [hit["_source"] for hit in res["hits"]["hits"]]
-        return Response(hits)
+            if category:
+               filter_.append({"term": {"category": category.lower()}})
+
+            if price_min:
+               filter_.append({"range": {"price": {"gte": float(price_min)}}})
+
+            if price_max:
+               filter_.append({"range": {"price": {"lte": float(price_max)}}})
+
+            body = {
+                  "query": {
+                      "bool": {
+                         "must": must,
+                            "filter": filter_
+                        }
+                      }
+                  }
+
+            res = es.search(index="products", body=body)
+            return Response([hit["_source"] for hit in res["hits"]["hits"]])
+
 
