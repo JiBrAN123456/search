@@ -35,6 +35,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             category = request.query_params.get("category")
             price_min = request.query_params.get("price_min")
             price_max = request.query_params.get("price_max")
+            date = request.query_params.get("date")
 
             must = []
             filter_ = []
@@ -50,6 +51,9 @@ class ProductViewSet(viewsets.ModelViewSet):
 
             if category:
                filter_.append({"term": {"category": category.lower()}})
+
+            if date:
+               filter_.append({"term": {"available_dates": date}})   
 
             if price_min:
                filter_.append({"range": {"price": {"gte": float(price_min)}}})
